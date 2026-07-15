@@ -1,4 +1,4 @@
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/temp";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
