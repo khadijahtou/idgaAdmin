@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+// import ReactQuill from "react-quill";
+// import "react-quill/dist/quill.snow.css";
 
 const CreateContent = () => {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const CreateContent = () => {
   const [author, setAuthor] = useState("");
   const [status, setStatus] = useState("Draft");
   const [heroImage, setHeroImage] = useState(null);
-  const [imageInput, setImageInput] = useState(null);
+
   const [blocks, setBlocks] = useState([
     {
       id: Date.now(),
@@ -174,15 +174,15 @@ const CreateContent = () => {
 
                 {/* TEXT INPUT */}
                 {block.variant === "paragraph" ? (
-                  <ReactQuill
-                    theme="snow"
+                  <textarea
+                    rows={8}
                     value={block.value}
-                    onChange={(value) => {
+                    onChange={(e) => {
                       const updated = [...blocks];
-                      updated[index].value = value;
+                      updated[index].value = e.target.value;
                       setBlocks(updated);
                     }}
-                    className="bg-white text-black rounded-xl"
+                    className="w-full bg-[#132C58] border border-[#1E3A6D] rounded-xl p-4"
                   />
                 ) : (
                   <textarea
@@ -334,7 +334,7 @@ const CreateContent = () => {
               {
                 id: Date.now(),
                 type: "gallery",
-                images: [null, null, null, null],
+                images: [null, null, null],
               },
             ])
           }
@@ -347,7 +347,8 @@ const CreateContent = () => {
       <div className="sticky top-6 bg-[#0D2348] rounded-3xl overflow-hidden border border-[#1E3A6D]">
         {/* Hero Section */}
         <div
-          className="h-[250px] flex items-center justify-center bg-cover bg-center"
+          className="h-62.5
+           flex items-center justify-center bg-cover bg-center"
           style={{
             backgroundImage: heroImage ? `url(${heroImage})` : "none",
           }}
