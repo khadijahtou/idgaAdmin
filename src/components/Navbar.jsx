@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -11,11 +11,13 @@ const Navbar = () => {
   };
 
   return (
-    <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
-      <h1 className="text-xl font-semibold">IDGA Admin Dashboard</h1>
+    <header className=" bg-white shadow px-6 py-4 flex justify-between items-center">
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-semibold">IDGA Admin Dashboard</h1>
+      </div>
 
       <div className="flex items-center gap-4">
-        <span>{user?.name}</span>
+        {/* <span>{user?.name}</span> */}
 
         <button
           onClick={handleLogout}

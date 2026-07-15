@@ -12,7 +12,7 @@ const AdminLayout = () => {
         <Navbar />
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 mt-16 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6  overflow-y-auto">
           <Outlet />
         </main>
       </div>

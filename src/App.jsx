@@ -29,6 +29,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* <Route path="*" element={<NotFound />} /> */}
           <Route path="content" element={<ContentList />} />
           <Route path="content/create" element={<CreateContent />} />
           <Route path="comments" element={<Comments />} />
