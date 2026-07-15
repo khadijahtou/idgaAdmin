@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/temp";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const { login } = useAuth();
