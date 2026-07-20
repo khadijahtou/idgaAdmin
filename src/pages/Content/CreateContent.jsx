@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import ReactQuill from "react-quill";
-// import "react-quill/dist/quill.snow.css";
+import api from "../../api/axios";
+import { uploadSingleImage } from "../../services/uploadService";
+import RichTextEditor from "../../components/RichTextEditor";
+import { useParams } from "react-router-dom";
 
 const CreateContent = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [type, setType] = useState("blog");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [author, setAuthor] = useState("");
-  const [status, setStatus] = useState("Draft");
+
+  const [status, setStatus] = useState("draft");
   const [heroImage, setHeroImage] = useState(null);
 
   const [blocks, setBlocks] = useState([
@@ -20,28 +23,118 @@ const CreateContent = () => {
       value: "",
     },
   ]);
+  useEffect(() => {
+    if (!id) return;
 
-  const handleSubmit = () => {
-    const newContent = {
-      type,
-      title,
-      date,
-      author,
-      status,
-      heroImage,
-      blocks,
+    const fetchContent = async () => {
+      try {
+        const res = await api.get(`/content/id/${id}`);
+
+        const item = res.data.content;
+
+        setTitle(item.title);
+        setType(item.type);
+        setStatus(item.status);
+        setHeroImage(item.heroImage);
+
+        if (item.publishedAt) {
+          setDate(item.publishedAt.split("T")[0]);
+        }
+
+        setBlocks(
+          item.blocks.map((block, index) => ({
+            id: index + Date.now(),
+            type: block.type,
+            variant: block.variant || "paragraph",
+            value: block.content || "",
+            image: block.image || null,
+            images: block.gallery || [],
+          })),
+        );
+      } catch (error) {
+        console.error(error);
+      }
     };
 
-    console.log(newContent);
+    fetchContent();
+  }, [id]);
+  const handleHeroImage = async (e) => {
+    const file = e.target.files[0];
 
-    alert(`${type} created`);
-    navigate("/content");
+    if (!file) return;
+
+    try {
+      const image = await uploadSingleImage(file);
+
+      setHeroImage({
+        url: image.url,
+        publicId: image.publicId,
+        alt: file.name,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Hero image upload failed.");
+    }
   };
+  const handleSubmit = async (publishStatus) => {
+    try {
+      const formattedBlocks = blocks.map((block) => {
+        if (block.type === "text") {
+          return {
+            type: "text",
+            content: block.value,
+          };
+        }
 
+        if (block.type === "image") {
+          return {
+            type: "image",
+            image: block.image,
+          };
+        }
+
+        if (block.type === "gallery") {
+          return {
+            type: "gallery",
+            gallery: block.gallery,
+          };
+        }
+
+        return block;
+      });
+
+      const newContent = {
+        title,
+        type,
+        status: publishStatus,
+        heroImage,
+        blocks: formattedBlocks,
+
+        excerpt: "",
+        category: [],
+        tags: [],
+        featured: false,
+
+        seoTitle: "",
+        seoDescription: "",
+        seoKeywords: [],
+      };
+
+      const response = id
+        ? await api.put(`/content/${id}`, newContent)
+        : await api.post("/content", newContent);
+
+      alert(response.data.message);
+
+      navigate("/content");
+    } catch (error) {
+      console.error(error);
+
+      alert(error.response?.data?.message || "Failed to create content.");
+    }
+  };
   return (
     <div className="min-h-screen bg-[#071B3A] p-6 text-white space-y-6">
-      <h2 className="text-2xl font-bold">Create Content</h2>
-
       {/* TYPE */}
       <select
         className="w-full bg-[#132C58] border border-[#1E3A6D] p-3 rounded-2xl"
@@ -51,7 +144,6 @@ const CreateContent = () => {
         <option value="blog">Blog</option>
         <option value="project">Project</option>
       </select>
-
       {/* TITLE */}
       <div>
         <label className="text-slate-400 uppercase text-sm">TITLE *</label>
@@ -63,38 +155,44 @@ const CreateContent = () => {
           className="mt-3 w-full bg-[#132C58] border border-[#1E3A6D] rounded-2xl px-5 py-4 outline-none"
         />
       </div>
-
       {/* META */}
       <div className="grid md:grid-cols-4 gap-4">
         {/* Hero Image */}
         <div>
           <label className="text-slate-400 uppercase text-sm">HERO IMAGE</label>
+
           <input
+            id="hero"
             type="file"
             accept="image/*"
-            id="hero"
             className="hidden"
-            onChange={(e) =>
-              setHeroImage(URL.createObjectURL(e.target.files[0]))
-            }
+            onChange={handleHeroImage}
           />
 
           <label
             htmlFor="hero"
             className="
-  mt-3
-  flex
-  items-center
-  justify-center
-  h-40
-  rounded-2xl
-  bg-[#132C58]
-  border border-dashed border-[#1E3A6D]
-  cursor-pointer
-  text-slate-400
-  "
+      mt-3
+      flex
+      items-center
+      justify-center
+      h-40
+      rounded-2xl
+      bg-[#132C58]
+      border border-dashed border-[#1E3A6D]
+      cursor-pointer
+      overflow-hidden
+    "
           >
-            Upload Hero Image
+            {heroImage ? (
+              <img
+                src={heroImage.url}
+                alt={heroImage.alt}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-slate-400">Upload Hero Image</span>
+            )}
           </label>
         </div>
 
@@ -110,18 +208,6 @@ const CreateContent = () => {
           />
         </div>
 
-        {/* Author */}
-        <div>
-          <label className="text-slate-400 uppercase text-sm">AUTHOR</label>
-
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="Author"
-            className="mt-3 w-full bg-[#132C58] border border-[#1E3A6D] rounded-2xl px-5 py-4"
-          />
-        </div>
-
         {/* Status */}
         <div>
           <label className="text-slate-400 uppercase text-sm">STATUS</label>
@@ -131,12 +217,11 @@ const CreateContent = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="mt-3 w-full bg-[#132C58] border border-[#1E3A6D] rounded-2xl px-5 py-4"
           >
-            <option>Draft</option>
-            <option>Published</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
           </select>
         </div>
       </div>
-
       {/* CONTENT BLOCKS */}
       <div className="space-y-4 mt-6">
         {blocks.map((block, index) => (
@@ -173,38 +258,15 @@ const CreateContent = () => {
                 </select>
 
                 {/* TEXT INPUT */}
-                {block.variant === "paragraph" ? (
-                  <textarea
-                    rows={8}
-                    value={block.value}
-                    onChange={(e) => {
-                      const updated = [...blocks];
-                      updated[index].value = e.target.value;
-                      setBlocks(updated);
-                    }}
-                    className="w-full bg-[#132C58] border border-[#1E3A6D] rounded-xl p-4"
-                  />
-                ) : (
-                  <textarea
-                    rows={block.variant === "heading" ? 2 : 3}
-                    value={block.value}
-                    onChange={(e) => {
-                      const updated = [...blocks];
-                      updated[index].value = e.target.value;
-                      setBlocks(updated);
-                    }}
-                    placeholder={
-                      block.variant === "heading"
-                        ? "Heading..."
-                        : "Subheading..."
-                    }
-                    className={`w-full bg-[#132C58] border border-[#1E3A6D] rounded-2xl p-4 text-white ${
-                      block.variant === "heading"
-                        ? "text-3xl font-bold"
-                        : "text-xl font-semibold"
-                    }`}
-                  />
-                )}
+                {/* TEXT INPUT */}
+                <RichTextEditor
+                  value={block.value}
+                  onChange={(content) => {
+                    const updated = [...blocks];
+                    updated[index].value = content;
+                    setBlocks(updated);
+                  }}
+                />
               </div>
             )}
 
@@ -240,8 +302,12 @@ const CreateContent = () => {
                 {/* PREVIEW */}
                 {block.image && (
                   <img
-                    src={URL.createObjectURL(block.image)}
-                    className="rounded-xl max-h-60 object-cover"
+                    src={
+                      block.image instanceof File
+                        ? URL.createObjectURL(block.image)
+                        : block.image.url || block.image
+                    }
+                    className="rounded-2xl w-full object-cover"
                   />
                 )}
               </div>
@@ -281,7 +347,11 @@ const CreateContent = () => {
                       {/* PREVIEW */}
                       {block.images[i2] && (
                         <img
-                          src={URL.createObjectURL(block.images[i2])}
+                          src={
+                            img instanceof File
+                              ? URL.createObjectURL(img)
+                              : img.url || img
+                          }
                           className="mt-2 rounded-xl max-h-32 object-cover"
                         />
                       )}
@@ -346,19 +416,27 @@ const CreateContent = () => {
       {/* LIVE PREVIEW */}
       <div className="sticky top-6 bg-[#0D2348] rounded-3xl overflow-hidden border border-[#1E3A6D]">
         {/* Hero Section */}
-        <div
-          className="h-62.5
-           flex items-center justify-center bg-cover bg-center"
-          style={{
-            backgroundImage: heroImage ? `url(${heroImage})` : "none",
-          }}
-        >
-          <div className="text-center">
-            <h1 className="text-4xl font-bold">{title || "Post Title"}</h1>
+        <div className="relative h-125 overflow-hidden rounded-3xl">
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: heroImage ? `url(${heroImage.url})` : "none",
+            }}
+          />
 
-            <p className="mt-4 text-slate-300">
-              {date || "Date"} • {author || "Author"}
-            </p>
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-linear-to-b from-[#071B3A]/85 via-[#071B3A]/60 to-[#071B3A]/80" />
+
+          {/* Content */}
+          <div className="relative z-10 flex h-full items-center justify-center text-center px-6">
+            <div>
+              <h1 className="max-w-5xl mx-auto text-5xl lg:text-6xl font-bold leading-tight">
+                {title || "Post Title"}
+              </h1>
+
+              <p className="mt-4 text-slate-300">{date || "Date"}</p>
+            </div>
           </div>
         </div>
 
@@ -370,17 +448,37 @@ const CreateContent = () => {
               {block.type === "text" && (
                 <>
                   {block.variant === "heading" && (
-                    <h2 className="text-3xl font-bold">{block.value}</h2>
+                    <div
+                      className="text-3xl font-bold"
+                      dangerouslySetInnerHTML={{
+                        __html: block.value,
+                      }}
+                    />
                   )}
 
                   {block.variant === "subheading" && (
-                    <h3 className="text-xl font-semibold">{block.value}</h3>
+                    <div
+                      className="text-xl font-semibold"
+                      dangerouslySetInnerHTML={{
+                        __html: block.value,
+                      }}
+                    />
                   )}
 
                   {block.variant === "paragraph" && (
                     <div
-                      className="text-slate-300 leading-8"
-                      dangerouslySetInnerHTML={{ __html: block.value }}
+                      className="
+    text-slate-300
+    leading-8
+    [&_ul]:list-disc
+    [&_ul]:ml-6
+    [&_ol]:list-decimal
+    [&_ol]:ml-6
+    [&_li]:mb-2
+  "
+                      dangerouslySetInnerHTML={{
+                        __html: block.value,
+                      }}
                     />
                   )}
                 </>
@@ -413,26 +511,27 @@ const CreateContent = () => {
           ))}
         </div>
       </div>
-
       {/* SAVE BUTTON */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex justify-end gap-4 mt-8">
         <button
-          onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl w-50 h-11.25"
+          onClick={() => navigate("/content")}
+          className="border border-slate-500 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl w-50 h-11.25 transition"
         >
-          DRAFT
+          Cancel
         </button>
+
         <button
-          onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl w-50 h-11.25  "
+          onClick={() => handleSubmit("draft")}
+          className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl w-50 h-11.25 transition"
         >
-          Publish and Save
+          {id ? "Update Draft" : "Save Draft"}
         </button>
+
         <button
-          onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-center px-6 py-3 rounded-2xl w-50 h-11.25  "
+          onClick={() => handleSubmit("published")}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl w-50 h-11.25 transition"
         >
-          CANCLE
+          {id ? "Update" : "Publish"}
         </button>
       </div>
     </div>

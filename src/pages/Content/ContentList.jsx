@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 
 const ContentList = () => {
@@ -7,38 +8,40 @@ const ContentList = () => {
   const [activeTab, setActiveTab] = useState("blog");
   const [search, setSearch] = useState("");
 
-  const [content] = useState([
-    {
-      id: 1,
-      title: "AI in Education",
-      type: "blog",
-      status: "Published",
-      date: "2026-06-01",
-    },
-    {
-      id: 2,
-      title: "E-commerce Platform",
-      type: "project",
-      status: "Draft",
-      date: "2026-05-20",
-    },
-    {
-      id: 3,
-      title: "Digital Marketing Tips",
-      type: "blog",
-      status: "Draft",
-      date: "2026-05-10",
-    },
-  ]);
+  const [content, setContent] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const fetchContent = async () => {
+    try {
+      const response = await api.get("/content");
+
+      setContent(response.data.content);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContent();
+  }, []);
 
   const filteredContent = content
     .filter((item) => item.type === activeTab)
     .filter((item) => item.title.toLowerCase().includes(search.toLowerCase()));
 
-  const handleDelete = (id) => {
-    console.log("Delete:", id);
-  };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this content?")) return;
 
+    try {
+      await api.delete(`/content/${id}`);
+
+      setContent((prev) => prev.filter((item) => item._id !== id));
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete content.");
+    }
+  };
   const totalBlogs = content.filter((item) => item.type === "blog").length;
 
   const totalProjects = content.filter(
@@ -46,9 +49,11 @@ const ContentList = () => {
   ).length;
 
   const totalPublished = content.filter(
-    (item) => item.status === "Published",
+    (item) => item.status === "published",
   ).length;
-
+  if (loading) {
+    return <div className="p-10 text-center">Loading content...</div>;
+  }
   return (
     <div className="p-6 space-y-8">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -153,28 +158,20 @@ const ContentList = () => {
       {/* Table */}
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[750px]">
+          <table className="w-full min-w-187.5">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="p-2 sm:p-5 text-left text-sm font-semibold">
-                  Title
-                </th>
+                <th className="p-5 text-left text-sm font-semibold">Image</th>
 
-                <th className="p-2 sm:p-5 text-left text-sm font-semibold">
-                  Type
-                </th>
+                <th className="p-5 text-left text-sm font-semibold">Title</th>
 
-                <th className="p-2 sm:p-5 text-left text-sm font-semibold">
-                  Date
-                </th>
+                <th className="p-5 text-left text-sm font-semibold">Type</th>
 
-                <th className="p-2 sm:p-5 text-left text-sm font-semibold">
-                  Status
-                </th>
+                <th className="p-5 text-left text-sm font-semibold">Date</th>
 
-                <th className="p-2 sm:p-5 text-left text-sm font-semibold">
-                  Actions
-                </th>
+                <th className="p-5 text-left text-sm font-semibold">Status</th>
+
+                <th className="p-5 text-left text-sm font-semibold">Actions</th>
               </tr>
             </thead>
 
@@ -196,55 +193,50 @@ const ContentList = () => {
               ) : (
                 filteredContent.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item._id}
                     className="border-b hover:bg-slate-50 transition"
                   >
-                    <td className="p-2 sm:p-5 font-medium">{item.title}</td>
+                    <td className="p-5">
+                      <img
+                        src={item.heroImage?.url}
+                        alt={item.title}
+                        className="w-20 h-14 rounded-xl object-cover"
+                      />
+                    </td>
 
-                    <td className="p-2 sm:p-5 capitalize">{item.type}</td>
+                    <td className="p-5 font-medium">{item.title}</td>
 
-                    <td className="p-2 sm:p-5 text-gray-500">{item.date}</td>
+                    <td className="p-5 capitalize">{item.type}</td>
 
-                    <td className="p-2 sm:p-5">
+                    <td className="p-5 text-gray-500">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </td>
+
+                    <td className="p-5">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          item.status === "Published"
+                          item.status === "published"
                             ? "bg-green-100 text-green-700"
                             : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
-                        {item.status}
+                        {item.status.charAt(0).toUpperCase() +
+                          item.status.slice(1)}
                       </span>
                     </td>
 
-                    <td className="p-2 sm:p-5">
+                    <td className="p-5">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/content/edit/${item.id}`)}
-                          className="
-                            bg-blue-50
-                            text-blue-600
-                            px-4
-                            py-2
-                            rounded-xl
-                            hover:bg-blue-100
-                            transition
-                          "
+                          onClick={() => navigate(`/content/edit/${item._id}`)}
+                          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition"
                         >
                           Edit
                         </button>
 
                         <button
-                          onClick={() => handleDelete(item.id)}
-                          className="
-                            bg-red-50
-                            text-red-600
-                            px-4
-                            py-2
-                            rounded-xl
-                            hover:bg-red-100
-                            transition
-                          "
+                          onClick={() => handleDelete(item._id)}
+                          className="bg-red-50 text-red-600 px-4 py-2 rounded-xl hover:bg-red-100 transition"
                         >
                           Delete
                         </button>

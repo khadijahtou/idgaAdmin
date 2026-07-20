@@ -1,42 +1,67 @@
-import React from "react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
+import { useEffect } from "react";
 
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline", "strike"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["blockquote", "code-block"],
-    ["link", "image"],
-    ["clean"],
-  ],
-};
+const RichTextEditor = ({ value, onChange }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+    ],
 
-const formats = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "list",
-  "bullet",
-  "blockquote",
-  "code-block",
-  "link",
-  "image",
-];
+    content: value,
 
-const RichTextEditor = ({ value, setValue }) => {
+    onUpdate({ editor }) {
+      onChange(editor.getHTML());
+    },
+  });
+
+  useEffect(() => {
+    if (!editor) return;
+
+    if (editor.getHTML() !== value) {
+      editor.commands.setContent(value);
+    }
+  }, [value, editor]);
+
+  if (!editor) return null;
+
   return (
-    <div>
-      <ReactQuill
-        theme="snow"
-        value={value}
-        onChange={setValue}
-        modules={modules}
-        formats={formats}
-        placeholder="Write your content here..."
+    <div className="rounded-xl border border-[#1E3A6D] overflow-hidden">
+      <div className="flex flex-wrap gap-2 p-3 bg-[#132C58]">
+        <button onClick={() => editor.chain().focus().toggleBold().run()}>
+          Bold
+        </button>
+
+        <button onClick={() => editor.chain().focus().toggleItalic().run()}>
+          Italic
+        </button>
+
+        <button onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          Underline
+        </button>
+
+        <button onClick={() => editor.chain().focus().toggleBulletList().run()}>
+          • List
+        </button>
+
+        <button
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        >
+          1. List
+        </button>
+      </div>
+
+      <EditorContent
+        editor={editor}
+        className="bg-[#132C58] min-h-[250px] p-4 text-white"
       />
     </div>
   );

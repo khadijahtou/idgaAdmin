@@ -1,20 +1,35 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
+import api from "../api/axios";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    login(
-      {
-        name: "Admin",
-        email: "admin@idga.com",
-      },
-      "fake-token",
-    );
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    navigate("/");
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+      });
+
+      login(response.data.user, response.data.token);
+
+      navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,7 +58,9 @@ const Login = () => {
 
           <input
             type="email"
-            placeholder="admin@idga.com"
+            placeholder="john.doe@idga.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -55,16 +72,20 @@ const Login = () => {
           <input
             type="password"
             placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Button */}
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <button
           onClick={handleLogin}
+          disabled={loading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition"
         >
-          Sign In
+          {loading ? "Signing In..." : "Sign In"}
         </button>
 
         <p className="text-center text-sm text-gray-500 mt-6">

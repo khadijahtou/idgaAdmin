@@ -32,6 +32,7 @@ function App() {
           {/* <Route path="*" element={<NotFound />} /> */}
           <Route path="content" element={<ContentList />} />
           <Route path="content/create" element={<CreateContent />} />
+          <Route path="content/edit/:id" element={<CreateContent />} />
           <Route path="comments" element={<Comments />} />
           <Route path="consultations" element={<Consultations />} />
           <Route path="newsletter" element={<Newsletter />} />
