@@ -82,6 +82,7 @@ const CreateContent = () => {
         if (block.type === "text") {
           return {
             type: "text",
+            variant: block.variant,
             content: block.value,
           };
         }
@@ -96,12 +97,16 @@ const CreateContent = () => {
         if (block.type === "gallery") {
           return {
             type: "gallery",
-            gallery: block.gallery,
+            gallery: block.images,
           };
         }
 
         return block;
       });
+
+      // 👇 Put it HERE
+      console.log("Formatted Blocks:");
+      console.log(JSON.stringify(formattedBlocks, null, 2));
 
       const newContent = {
         title,
@@ -109,17 +114,16 @@ const CreateContent = () => {
         status: publishStatus,
         heroImage,
         blocks: formattedBlocks,
-
         excerpt: "",
         category: [],
         tags: [],
         featured: false,
-
         seoTitle: "",
         seoDescription: "",
         seoKeywords: [],
       };
 
+      // ...
       const response = id
         ? await api.put(`/content/${id}`, newContent)
         : await api.post("/content", newContent);
@@ -280,14 +284,37 @@ const CreateContent = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files[0];
+                    if (!file) return;
 
-                    setBlocks((prev) =>
-                      prev.map((b, i) =>
-                        i === index ? { ...b, image: file } : b,
-                      ),
-                    );
+                    try {
+                      const uploaded = await uploadSingleImage(file);
+
+                      setBlocks((prev) => {
+                        const updated = prev.map((b, i) =>
+                          i === index
+                            ? {
+                                ...b,
+                                image: uploaded,
+                              }
+                            : b,
+                        );
+
+                        console.log("Updated blocks:", updated);
+
+                        return updated;
+                      });
+                    } catch (error) {
+                      console.log("===== IMAGE UPLOAD ERROR =====");
+                      console.log(error);
+                      console.log("Status:", error.response?.status);
+                      console.log("Data:", error.response?.data);
+
+                      alert(
+                        error.response?.data?.message || "Image upload failed.",
+                      );
+                    }
                   }}
                   className="text-white"
                 />
@@ -324,26 +351,37 @@ const CreateContent = () => {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files[0];
+                          if (!file) return;
 
-                          setBlocks((prev) =>
-                            prev.map((b, i) => {
-                              if (i !== index) return b;
+                          try {
+                            const uploaded = await uploadSingleImage(file);
+                            console.log("Uploaded:", uploaded);
+                            setBlocks((prev) =>
+                              prev.map((b, i) => {
+                                if (i !== index) return b;
 
-                              const newImages = [...b.images];
-                              newImages[i2] = file;
+                                const newImages = [...b.images];
+                                newImages[i2] = uploaded;
 
-                              return {
-                                ...b,
-                                images: newImages,
-                              };
-                            }),
-                          );
+                                return {
+                                  ...b,
+                                  images: newImages,
+                                };
+                              }),
+                            );
+                          } catch (error) {
+                            console.error(error);
+
+                            alert(
+                              error.response?.data?.message ||
+                                "Gallery upload failed.",
+                            );
+                          }
                         }}
                         className="text-white"
                       />
-
                       {/* PREVIEW */}
                       {block.images[i2] && (
                         <img
@@ -487,11 +525,14 @@ const CreateContent = () => {
               {/* IMAGE BLOCK */}
               {block.type === "image" && block.image && (
                 <img
-                  src={URL.createObjectURL(block.image)}
+                  src={
+                    block.image instanceof File
+                      ? URL.createObjectURL(block.image)
+                      : block.image.url || block.image
+                  }
                   className="rounded-2xl w-full object-cover"
                 />
               )}
-
               {/* GALLERY BLOCK */}
               {block.type === "gallery" && (
                 <div className="grid grid-cols-2 gap-4">
@@ -499,8 +540,11 @@ const CreateContent = () => {
                     (img, index) =>
                       img && (
                         <img
-                          key={index}
-                          src={URL.createObjectURL(img)}
+                          src={
+                            img instanceof File
+                              ? URL.createObjectURL(img)
+                              : img.url || img
+                          }
                           className="rounded-xl h-48 w-full object-cover"
                         />
                       ),
