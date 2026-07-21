@@ -5,14 +5,16 @@ import Sidebar from "../components/Sidebar";
 const AdminLayout = () => {
   return (
     <div className="bg-gray-100 min-h-screen">
-      {/* Fixed Sidebar */} <Sidebar />
-      {/* Main Area */}
-      <div className="md:ml-64 flex flex-col min-h-screen">
-        {/* Fixed Navbar */}
-        <Navbar />
+      {/* Navbar at the very top */}
+      <Navbar />
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6  overflow-y-auto">
+      {/* Sidebar + Main Content */}
+      <div className="flex">
+        {/* Sidebar */}
+        <Sidebar />
+
+        {/* Main Area */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <Outlet />
         </main>
       </div>

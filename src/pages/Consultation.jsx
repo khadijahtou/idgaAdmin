@@ -1,109 +1,192 @@
-import { useState } from "react";
-
-const dummyData = [
-  {
-    _id: "1",
-    name: "Aisha Bello",
-    email: "aisha@email.com",
-    service: "Interior Design",
-    preferredDate: "2026-06-20",
-    status: "Pending",
-  },
-  {
-    _id: "2",
-    name: "John Doe",
-    email: "john@email.com",
-    service: "Brand Consultation",
-    preferredDate: "2026-06-22",
-    status: "Approved",
-  },
-  {
-    _id: "3",
-    name: "Fatima Ali",
-    email: "fatima@email.com",
-    service: "Web Design",
-    preferredDate: "2026-06-25",
-    status: "Rejected",
-  },
-];
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 
 const Consultations = () => {
-  const [consultations, setConsultations] = useState(dummyData);
+  const [consultations, setConsultations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const filtered = consultations.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    fetchConsultations();
+  }, []);
 
-  const updateStatus = (id, status) => {
-    const updated = consultations.map((item) =>
-      item._id === id ? { ...item, status } : item,
+  // Fetch consultations from backend
+  const fetchConsultations = async () => {
+    try {
+      const res = await api.get("/consultations");
+
+      setConsultations(res.data.consultations || []);
+    } catch (error) {
+      console.error(
+        "Failed to fetch consultations:",
+        error.response?.data || error.message,
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Approve consultation
+  const approve = async (id) => {
+    try {
+      await api.patch(`/consultations/${id}/approve`);
+
+      fetchConsultations();
+    } catch (error) {
+      console.error(
+        "Failed to approve consultation:",
+        error.response?.data || error.message,
+      );
+    }
+  };
+
+  // Reject consultation
+  const reject = async (id) => {
+    try {
+      await api.patch(`/consultations/${id}/reject`);
+
+      fetchConsultations();
+    } catch (error) {
+      console.error(
+        "Failed to reject consultation:",
+        error.response?.data || error.message,
+      );
+    }
+  };
+
+  // Delete consultation
+  const remove = async (id) => {
+    if (!window.confirm("Delete this consultation?")) return;
+
+    try {
+      await api.delete(`/consultations/${id}`);
+
+      fetchConsultations();
+    } catch (error) {
+      console.error(
+        "Failed to delete consultation:",
+        error.response?.data || error.message,
+      );
+    }
+  };
+
+  // Search consultations
+  const filteredConsultations = consultations.filter((item) => {
+    const searchTerm = search.toLowerCase();
+
+    return (
+      item.fullName?.toLowerCase().includes(searchTerm) ||
+      item.email?.toLowerCase().includes(searchTerm) ||
+      item.service?.toLowerCase().includes(searchTerm) ||
+      item.organization?.toLowerCase().includes(searchTerm)
     );
-    setConsultations(updated);
-  };
+  });
 
-  const deleteItem = (id) => {
-    const updated = consultations.filter((item) => item._id !== id);
-    setConsultations(updated);
-  };
+  if (loading) {
+    return (
+      <div className="p-6">
+        <p className="text-white">Loading consultations...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Consultations</h1>
+      <h1 className="text-2xl font-bold mb-6">Consultations</h1>
 
       {/* Search */}
       <input
         type="text"
-        placeholder="Search consultations..."
-        className="border p-2 rounded w-full mb-6"
+        placeholder="Search by name, email, service or organization..."
+        className="border p-3 rounded w-full mb-6"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* List */}
-      <div className="space-y-4">
-        {filtered.map((item) => (
-          <div key={item._id} className="border p-4 rounded shadow-sm">
-            <h2 className="font-bold text-lg">{item.name}</h2>
-            <p>{item.email}</p>
-            <p>{item.service}</p>
-            <p>{item.preferredDate}</p>
+      {/* No consultations */}
+      {filteredConsultations.length === 0 && (
+        <div className="bg-white p-6 rounded shadow">
+          <p>No consultations found.</p>
+        </div>
+      )}
 
-            {/* Status */}
-            <p className="mt-2">
-              Status:{" "}
+      {/* Consultation List */}
+      <div className="space-y-4">
+        {filteredConsultations.map((item) => (
+          <div
+            key={item._id}
+            className="bg-white border p-5 rounded-xl shadow-sm"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h2 className="font-bold text-lg">{item.fullName}</h2>
+
+                <p className="text-gray-600">{item.email}</p>
+
+                <p className="text-gray-600">{item.phone}</p>
+              </div>
+
+              {/* Status */}
               <span
-                className={
-                  item.status === "Approved"
-                    ? "text-green-600 font-bold"
-                    : item.status === "Rejected"
-                      ? "text-red-600 font-bold"
-                      : "text-yellow-600 font-bold"
-                }
+                className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                  item.status === "approved"
+                    ? "bg-green-100 text-green-700"
+                    : item.status === "rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                }`}
               >
                 {item.status}
               </span>
-            </p>
+            </div>
 
-            {/* Buttons */}
-            <div className="flex gap-2 mt-3 flex-wrap">
-              <button
-                onClick={() => updateStatus(item._id, "Approved")}
-                className="bg-green-600 text-white px-3 py-1 rounded"
-              >
-                Approve
-              </button>
+            {/* Details */}
+            <div className="mt-4 space-y-2">
+              <p>
+                <strong>Organization:</strong>{" "}
+                {item.organization || "Not provided"}
+              </p>
+
+              <p>
+                <strong>Service:</strong> {item.service}
+              </p>
+
+              <p>
+                <strong>Message:</strong> {item.message}
+              </p>
+
+              <p className="text-sm text-gray-500">
+                Submitted:{" "}
+                {item.createdAt
+                  ? new Date(item.createdAt).toLocaleDateString()
+                  : "N/A"}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 mt-5 flex-wrap">
+              {item.status !== "approved" && (
+                <button
+                  onClick={() => approve(item._id)}
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  Approve
+                </button>
+              )}
+
+              {item.status !== "rejected" && (
+                <button
+                  onClick={() => reject(item._id)}
+                  className="bg-yellow-500 text-white px-4 py-2 rounded"
+                >
+                  Reject
+                </button>
+              )}
 
               <button
-                onClick={() => updateStatus(item._id, "Rejected")}
-                className="bg-yellow-500 text-white px-3 py-1 rounded"
-              >
-                Reject
-              </button>
-
-              <button
-                onClick={() => deleteItem(item._id)}
-                className="bg-red-600 text-white px-3 py-1 rounded"
+                onClick={() => remove(item._id)}
+                className="bg-red-600 text-white px-4 py-2 rounded"
               >
                 Delete
               </button>
