@@ -69,7 +69,7 @@ const Dashboard = () => {
       icon: GraduationCap,
     },
     {
-      title: "Subscribers",
+      title: "Newsletter Subscribers",
       value: stats.totalSubscribers,
       icon: Mail,
     },
