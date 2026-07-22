@@ -11,7 +11,7 @@ const CreateContent = () => {
   const [type, setType] = useState("blog");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-
+  const [category, setCategory] = useState("");
   const [status, setStatus] = useState("draft");
   const [heroImage, setHeroImage] = useState(null);
 
@@ -36,7 +36,7 @@ const CreateContent = () => {
         setType(item.type);
         setStatus(item.status);
         setHeroImage(item.heroImage);
-
+        setCategory(item.category?.[0] || "");
         if (item.publishedAt) {
           setDate(item.publishedAt.split("T")[0]);
         }
@@ -115,12 +115,18 @@ const CreateContent = () => {
         heroImage,
         blocks: formattedBlocks,
         excerpt: "",
-        category: [],
+        category: category ? [category] : [],
         tags: [],
         featured: false,
         seoTitle: "",
         seoDescription: "",
         seoKeywords: [],
+        publishedAt:
+          publishStatus === "published"
+            ? date
+              ? new Date(`${date}T12:00:00`).toISOString()
+              : new Date().toISOString()
+            : null,
       };
 
       // ...
@@ -199,7 +205,27 @@ const CreateContent = () => {
             )}
           </label>
         </div>
+        {/* Category */}
+        <div>
+          <label className="text-slate-400 uppercase text-sm">CATEGORY</label>
 
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="mt-3 w-full bg-[#132C58] border border-[#1E3A6D] rounded-2xl px-5 py-4"
+          >
+            <option value="">Select Category</option>
+            <option value="Robotics">Robotics</option>
+            <option value="Technology">Technology</option>
+            <option value="Education">Education</option>
+            <option value="Climate & Sustainability">
+              Climate & Sustainability
+            </option>
+            <option value="Community">Community</option>
+            <option value="Events">Events</option>
+            <option value="Innovation">Innovation</option>
+          </select>
+        </div>
         {/* Date */}
         <div>
           <label className="text-slate-400 uppercase text-sm">DATE</label>
