@@ -20,9 +20,11 @@ const CreateContent = () => {
       id: Date.now(),
       type: "text",
       variant: "heading",
+      fontSize: 36,
       value: "",
     },
   ]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -46,6 +48,7 @@ const CreateContent = () => {
             id: index + Date.now(),
             type: block.type,
             variant: block.variant || "paragraph",
+            fontSize: block.fontSize || 16,
             value: block.content || "",
             image: block.image || null,
             images: block.gallery || [],
@@ -83,6 +86,7 @@ const CreateContent = () => {
           return {
             type: "text",
             variant: block.variant,
+            fontSize: block.fontSize || 16,
             content: block.value,
           };
         }
@@ -272,23 +276,44 @@ const CreateContent = () => {
             {/* TEXT BLOCK */}
             {block.type === "text" && (
               <div>
-                {/* TEXT TYPE SELECTOR */}
-                <select
-                  value={block.variant}
-                  onChange={(e) => {
-                    const updated = [...blocks];
-                    updated[index].variant = e.target.value;
-                    setBlocks(updated);
-                  }}
-                  className="mb-3 bg-[#132C58] border border-[#1E3A6D] rounded-xl p-2 text-white"
-                >
-                  <option value="heading">Heading</option>
-                  <option value="subheading">Subheading</option>
-                  <option value="paragraph">Paragraph</option>
-                </select>
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {/* TEXT TYPE */}
+                  <select
+                    value={block.variant}
+                    onChange={(e) => {
+                      const updated = [...blocks];
+                      updated[index].variant = e.target.value;
+                      setBlocks(updated);
+                    }}
+                    className="bg-[#132C58] border border-[#1E3A6D] rounded-xl p-2 text-white"
+                  >
+                    <option value="heading">Heading</option>
+                    <option value="subheading">Subheading</option>
+                    <option value="paragraph">Paragraph</option>
+                  </select>
 
-                {/* TEXT INPUT */}
-                {/* TEXT INPUT */}
+                  {/* FONT SIZE */}
+                  <select
+                    value={block.fontSize || 16}
+                    onChange={(e) => {
+                      const updated = [...blocks];
+                      updated[index].fontSize = Number(e.target.value);
+                      setBlocks(updated);
+                    }}
+                    className="bg-[#132C58] border border-[#1E3A6D] rounded-xl p-2 text-white"
+                  >
+                    <option value="12">12px</option>
+                    <option value="14">14px</option>
+                    <option value="16">16px</option>
+                    <option value="18">18px</option>
+                    <option value="20">20px</option>
+                    <option value="24">24px</option>
+                    <option value="30">30px</option>
+                    <option value="36">36px</option>
+                  </select>
+                </div>
+
+                {/* TEXT EDITOR */}
                 <RichTextEditor
                   value={block.value}
                   onChange={(content) => {
@@ -513,16 +538,17 @@ const CreateContent = () => {
                 <>
                   {block.variant === "heading" && (
                     <div
-                      className="text-3xl font-bold"
+                      style={{ fontSize: `${block.fontSize || 36}px` }}
+                      className="font-bold leading-tight"
                       dangerouslySetInnerHTML={{
                         __html: block.value,
                       }}
                     />
                   )}
-
                   {block.variant === "subheading" && (
                     <div
-                      className="text-xl font-semibold"
+                      style={{ fontSize: `${block.fontSize || 24}px` }}
+                      className="font-semibold leading-snug"
                       dangerouslySetInnerHTML={{
                         __html: block.value,
                       }}
@@ -531,15 +557,16 @@ const CreateContent = () => {
 
                   {block.variant === "paragraph" && (
                     <div
+                      style={{ fontSize: `${block.fontSize || 16}px` }}
                       className="
-    text-slate-300
-    leading-8
-    [&_ul]:list-disc
-    [&_ul]:ml-6
-    [&_ol]:list-decimal
-    [&_ol]:ml-6
-    [&_li]:mb-2
-  "
+      
+      text-slate-300
+      leading-8
+      [&_ul]:list-disc
+      [&_ul]:ml-6
+      [&_ol]:list-decimal
+      [&_ol]:ml-6
+      [&_li]:mb-2"
                       dangerouslySetInnerHTML={{
                         __html: block.value,
                       }}
